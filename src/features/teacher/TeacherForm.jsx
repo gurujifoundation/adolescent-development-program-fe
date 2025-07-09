@@ -28,6 +28,40 @@ const TeacherForm = ({
     schoolId: teacherDataDefault?.schoolId,
   });
 
+  const validateForm = () => {
+    const newErrors: string[] = [];
+
+    // Validate Teacher Name
+    if (!/^[A-Za-z\s]+$/.test(teacherData.name || "")) {
+      newErrors.push(
+        "Teacher name cannot contain special characters or numbers."
+      );
+    }
+
+    // Validate Experience
+    if (
+      teacherData.experience === "" ||
+      isNaN(teacherData.experience) ||
+      Number(teacherData.experience) < 0
+    ) {
+      newErrors.push("Experience must be a non-negative number.");
+    }
+
+    // Validate School Selection
+    if (!teacherData.schoolId) {
+      newErrors.push("Please select a school.");
+    }
+
+    // Update error state
+    if (newErrors.length > 0) {
+      setError(newErrors); // replaces the whole error list
+      return false;
+    } else {
+      clearError(); // clears old ones
+      return true;
+    }
+  };
+
   useEffect(() => {
     setTeacherData(teacherDataDefault);
   }, [teacherDataDefault]);
@@ -72,25 +106,26 @@ const TeacherForm = ({
 
   const handleSubmitButton = async (e) => {
     e.preventDefault();
-    if (loading) return
-    if (teacherData.schoolId != null && teacherData.schoolId) {
-      setLoading(true)
-      try {
-        const response = await handleSubmit(teacherData);
+    if (loading) return;
 
-        if (response?.data?.status) {
-          setShowModal(true);
-          clearError();
-        } else if (response?.data?.messages) {
-          setError(response?.data?.messages.map((msg) => msg.message));
-        } else {
-          setError("An unexpected error occurred.");
-        }
-      } catch (error) {
-        setError(error.message || "Error submitting the form.");
-      } finally {
-        setLoading(false); // Re-enable button
+    const isValid = validateForm();
+    if (!isValid) return;
+
+    setLoading(true);
+    try {
+      const response = await handleSubmit(teacherData);
+      if (response?.data?.status) {
+        setShowModal(true);
+        clearError();
+      } else if (response?.data?.messages) {
+        setError(response?.data?.messages.map((msg) => msg.message));
+      } else {
+        setError("An unexpected error occurred.");
       }
+    } catch (error) {
+      setError(error.message || "Error submitting the form.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -104,7 +139,7 @@ const TeacherForm = ({
       <form onSubmit={handleSubmitButton}>
         <h2>{heading}</h2>
         <div className="form-layout">
-          <div className='form-row'>
+          <div className="form-row">
             <TextInput
               label="Teacher Name"
               name="name"
