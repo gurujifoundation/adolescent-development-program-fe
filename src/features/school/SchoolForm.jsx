@@ -100,11 +100,14 @@ const SchoolForm = ({
         clearError();
       } else if (response.data?.messages) {
         setError(response.data.messages.map((msg) => msg.message));
-      } else {
+      } else if(response?.response?.data?.messages) {
+        setError(response?.response?.data?.messages.map((msg) => msg.message));
+      }else{
         setError("An unexpected error occurred.");
       }
     } catch (error) {
-      setError(error.message || "Error submitting the form.");
+      // console.log(error)
+      setError(error?.messages.map((msg) => msg.message) || "Error submitting the form.");
     } finally {
       setLoading(false);
     }
