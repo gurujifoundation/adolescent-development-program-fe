@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from "react";
-import SuccessModal from "../../common/FeedbackComponents/Sucess/SuccessModal"; // Import the modal component
+import SuccessModal from "../../common/FeedbackComponents/Sucess/SuccessModal";
 import useError from "../../hooks/useError";
 
-import TextInput from "../../common/FormInput/TextInput"; // Import TextInput
-import NumberInput from "../../common/FormInput/NumberInput"; // Import NumberInput
-import SelectInput from "../../common/FormInput/SelectInput"; // Import SelectInput
-import ErrorMessage from "../../common/FormInput/ErrorMessage"; // Import ErrorMessage
+import TextInput from "../../common/FormInput/TextInput";
+import NumberInput from "../../common/FormInput/NumberInput";
+import SelectInput from "../../common/FormInput/SelectInput";
+import ErrorMessage from "../../common/FormInput/ErrorMessage";
 import Button from "../../common/FormInput/Button";
 
 import "./TeacherForm.css";
 import "../../CSS/Main.css";
 
 import apiServices from "../../common/ServiCeProvider/Services";
+import {
+  validateName,
+  validateNumberRange,
+} from "../../common/validators";
 
 const TeacherForm = ({
   handleSubmit,
@@ -28,40 +32,6 @@ const TeacherForm = ({
     schoolId: teacherDataDefault?.schoolId,
   });
 
-  const validateForm = () => {
-    const newErrors: string[] = [];
-
-    // Validate Teacher Name
-    if (!/^[A-Za-z\s]+$/.test(teacherData.name || "")) {
-      newErrors.push(
-        "Teacher name cannot contain special characters or numbers."
-      );
-    }
-
-    // Validate Experience
-    if (
-      teacherData.experience === "" ||
-      isNaN(teacherData.experience) ||
-      Number(teacherData.experience) < 0
-    ) {
-      newErrors.push("Experience must be a non-negative number.");
-    }
-
-    // Validate School Selection
-    if (!teacherData.schoolId) {
-      newErrors.push("Please select a school.");
-    }
-
-    // Update error state
-    if (newErrors.length > 0) {
-      setError(newErrors); // replaces the whole error list
-      return false;
-    } else {
-      clearError(); // clears old ones
-      return true;
-    }
-  };
-
   useEffect(() => {
     setTeacherData(teacherDataDefault);
   }, [teacherDataDefault]);
@@ -71,7 +41,6 @@ const TeacherForm = ({
       .getAllSchoolList()
       .then((res) => {
         res = res?.data?.data?.schools;
-        // console.log(res);
         if (res && res.length > 0) {
           setSchools(res);
         } else {
@@ -96,7 +65,7 @@ const TeacherForm = ({
       [e.target.name]: e.target.value,
     });
   };
-  console.log(teacherData.schoolId);
+
   const handleSchoolChange = (e) => {
     setTeacherData({
       ...teacherData,
@@ -108,9 +77,31 @@ const TeacherForm = ({
     e.preventDefault();
     if (loading) return;
 
-    const isValid = validateForm();
-    if (!isValid) return;
+    const newErrors = [];
 
+    // Teacher Name: alphabets and spaces (min length 2)
+    const nameError = validateName(teacherData.name, 2);
+    if (nameError) {
+      newErrors.push("Teacher name: " + nameError);
+    }
+
+    // Experience: must be a number between 0 and 60 (example range)
+    const experienceError = validateNumberRange(teacherData.experience, 0, 60, true);
+    if (experienceError) {
+      newErrors.push("Experience: " + experienceError);
+    }
+
+    // School selection: required
+    if (!teacherData.schoolId) {
+      newErrors.push("School selection is required.");
+    }
+
+    if (newErrors.length > 0) {
+      setError(newErrors);
+      return;
+    }
+
+    clearError();
     setLoading(true);
     try {
       const response = await handleSubmit(teacherData);
@@ -145,14 +136,14 @@ const TeacherForm = ({
               name="name"
               value={teacherData.name}
               onChange={handleInputChange}
-              required
+              // required
             />
             <NumberInput
               label="Experience"
               name="experience"
               value={teacherData.experience}
               onChange={handleInputChange}
-              required
+              // required
             />
           </div>
           <SelectInput
@@ -160,7 +151,7 @@ const TeacherForm = ({
             value={teacherData.schoolId || ""}
             onChange={handleSchoolChange}
             options={schools}
-            required
+            // required
           />
         </div>
 

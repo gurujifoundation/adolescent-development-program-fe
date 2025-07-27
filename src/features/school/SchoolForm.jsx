@@ -8,6 +8,12 @@ import NumberInput from "../../common/FormInput/NumberInput";
 import TextInput from "../../common/FormInput/TextInput";
 import Button from "../../common/FormInput/Button";
 import useError from "../../hooks/useError";
+import {
+  validateName,
+  validateAddress,
+  validatePhoneNumber,
+  validateWebsite, // <-- add this import
+} from "../../common/validators";
 
 const SchoolForm = ({
   handleSubmit,
@@ -49,44 +55,46 @@ const SchoolForm = ({
 
     const newErrors = [];
 
-    // School name: alphanumeric + spaces
-    if (!/^[A-Za-z0-9\s]+$/.test(schoolData.name || "")) {
-      newErrors.push("School name should be alphanumeric only.");
+    // School name: alphanumeric + spaces (min length 2)
+    const nameError = validateName(schoolData.name, 2);
+    if (nameError) {
+      newErrors.push("School name: " + nameError);
     }
 
-    // Address: at least 5 characters
-    if (!schoolData.address || schoolData.address.trim().length < 5) {
-      newErrors.push("Address must be at least 5 characters long.");
+    // Address: at least 5 characters, valid chars
+    const addressError = validateAddress(schoolData.address, 5);
+    if (addressError) {
+      newErrors.push("Address: " + addressError);
     }
 
-    // Principal Name: alphabets and spaces
-    if (!/^[A-Za-z\s]+$/.test(schoolData.principalName || "")) {
-      newErrors.push("Principal name should only contain letters and spaces.");
+    // Principal Name: alphabets and spaces (min length 2)
+    const principalNameError = validateName(schoolData.principalName, 2);
+    if (principalNameError) {
+      newErrors.push("Principal name: " + principalNameError);
     }
 
     // Principal Contact: 10 digits
-    if (!/^\d{10}$/.test(schoolData.principalContactNo || "")) {
-      newErrors.push("Principal contact number must be exactly 10 digits.");
+    const principalContactError = validatePhoneNumber(schoolData.principalContactNo);
+    if (principalContactError) {
+      newErrors.push("Principal contact number: " + principalContactError);
     }
 
     // Trustee Contact (optional): if present, must be 10 digits
-    if (
-      schoolData.trusteeContactInfo &&
-      !/^\d{10}$/.test(schoolData.trusteeContactInfo)
-    ) {
-      newErrors.push("Trustee contact number must be 10 digits.");
+    if (schoolData.trusteeContactInfo) {
+      const trusteeContactError = validatePhoneNumber(schoolData.trusteeContactInfo);
+      if (trusteeContactError) {
+        newErrors.push("Trustee contact number: " + trusteeContactError);
+      }
     }
 
-    // Website (optional): basic URL validation
-    if (
-      schoolData.website &&
-      !/^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/\S*)?$/.test(schoolData.website)
-    ) {
-      newErrors.push("Please enter a valid website URL.");
+    // Website (optional): basic URL validation using validateWebsite
+    const websiteError = validateWebsite(schoolData.website);
+    if (websiteError) {
+      newErrors.push("Website: " + websiteError);
     }
 
     if (newErrors.length > 0) {
-      setError(newErrors); // <-- this replaces old errors
+      setError(newErrors);
       return;
     }
 
@@ -100,13 +108,12 @@ const SchoolForm = ({
         clearError();
       } else if (response.data?.messages) {
         setError(response.data.messages.map((msg) => msg.message));
-      } else if(response?.response?.data?.messages) {
+      } else if (response?.response?.data?.messages) {
         setError(response?.response?.data?.messages.map((msg) => msg.message));
-      }else{
+      } else {
         setError("An unexpected error occurred.");
       }
     } catch (error) {
-      // console.log(error)
       setError(error?.messages.map((msg) => msg.message) || "Error submitting the form.");
     } finally {
       setLoading(false);
@@ -129,7 +136,7 @@ const SchoolForm = ({
               name="name"
               value={schoolData.name}
               onChange={handleInputChange}
-              required
+              // required
             />
 
             <TextInput
@@ -137,7 +144,7 @@ const SchoolForm = ({
               name="address"
               value={schoolData.address}
               onChange={handleInputChange}
-              required
+              // required
             />
           </div>
 
@@ -147,7 +154,7 @@ const SchoolForm = ({
               name="principalName"
               value={schoolData.principalName}
               onChange={handleInputChange}
-              required
+              // required
             />
 
             <TextInput
@@ -155,7 +162,7 @@ const SchoolForm = ({
               name="principalContactNo"
               value={schoolData.principalContactNo}
               onChange={handleInputChange}
-              required
+              // required
             />
           </div>
 

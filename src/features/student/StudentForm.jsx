@@ -7,7 +7,13 @@ import TextInput from "../../common/FormInput/TextInput";
 import Button from "../../common/FormInput/Button";
 import apiServices from "../../common/ServiCeProvider/Services";
 import SelectInput from "../../common/FormInput/SelectInput";
-
+import {
+  validateName,
+  validateBirthday,
+  validateAddress,
+  validatePhoneNumber,
+  validateEmail,
+} from "../../common/validators";
 
 function StudentForm({
     handleSubmit,
@@ -26,52 +32,6 @@ function StudentForm({
     const handleClose = () => {
         navigate("/performance")
     }
-
-    const handleSubmitButton = async (e) => {
-        e.preventDefault()
-        if (loading) return;
-        setLoading(true)
-        try {
-            const postData = {
-                schoolId: formData?.schoolId,
-                name: formData?.studentName,
-                dob: formData?.dateOfBirth,
-                parent: {
-                    id: 0,
-                    name: formData?.parentName,
-                    occupation: formData?.parentOccupation,
-                    phoneNumber: formData?.parentNumber
-                },
-                address: formData?.address,
-                phoneNumber: formData?.studentNumber,
-                alternativeNumber: formData?.alternateNumber,
-                email: formData?.emailId,
-            }
-            const res = await handleSubmit(postData);
-            if (res?.status) {
-                setShowModal(true);
-                clearError();
-                navigate("/student")
-            } else if (res?.messages) {
-                setError(res?.messages.map((msg) => msg.message));
-            } else {
-                // setError("An unexpected error occurred.");
-            }
-        } catch (error) {
-            setError(error.message || "Error submitting the form.");
-        }
-        finally {
-            setLoading(false); // Re-enable button
-        }
-    }
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({
-            ...formData,
-            [name]: value,
-        });
-    };
 
     const [formData, setFormData] = useState({
         schoolId: "",
@@ -106,6 +66,126 @@ function StudentForm({
     useEffect(() => {
         getSchoolData()
     }, [])
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: value,
+        });
+    };
+
+    const handleSubmitButton = async (e) => {
+        e.preventDefault();
+        if (loading) return;
+
+        const newErrors = [];
+
+        // Student Name: required, alphabets and spaces, min length 2
+        const studentNameError = validateName(formData.studentName, 2);
+        if (studentNameError) {
+            newErrors.push("Student name: " + studentNameError);
+        }
+
+        // School selection: required
+        if (!formData.schoolId) {
+            newErrors.push("School selection is required.");
+        }
+
+        // Date of Birth: required, valid date, not in future
+        const dobError = validateBirthday(formData.dateOfBirth);
+        if (dobError) {
+            newErrors.push("Date of Birth: " + dobError);
+        }
+
+        // Parent Name: required, alphabets and spaces, min length 2
+        const parentNameError = validateName(formData.parentName, 2);
+        if (parentNameError) {
+            newErrors.push("Parent name: " + parentNameError);
+        }
+
+        // Parent Occupation: required, alphabets and spaces, min length 2
+        const parentOccupationError = validateName(formData.parentOccupation, 2);
+        if (parentOccupationError) {
+            newErrors.push("Parent occupation: " + parentOccupationError);
+        }
+
+        // Parent Number: required, 10 digits
+        const parentNumberError = validatePhoneNumber(formData.parentNumber);
+        if (parentNumberError) {
+            newErrors.push("Parent's number: " + parentNumberError);
+        }
+
+        // Address: required, min length 5, valid chars
+        const addressError = validateAddress(formData.address, 5);
+        if (addressError) {
+            newErrors.push("Address: " + addressError);
+        }
+
+        // Student's Number: optional, if present must be 10 digits
+        if (formData.studentNumber) {
+            const studentNumberError = validatePhoneNumber(formData.studentNumber);
+            if (studentNumberError) {
+                newErrors.push("Student's number: " + studentNumberError);
+            }
+        }
+
+        // Alternate Number: optional, if present must be 10 digits
+        if (formData.alternateNumber) {
+            const alternateNumberError = validatePhoneNumber(formData.alternateNumber);
+            if (alternateNumberError) {
+                newErrors.push("Alternate number: " + alternateNumberError);
+            }
+        }
+
+        // Email: optional, if present must be valid
+        if (formData.emailId) {
+            const emailError = validateEmail(formData.emailId);
+            if (emailError) {
+                newErrors.push("Email: " + emailError);
+            }
+        }
+
+        if (newErrors.length > 0) {
+            setError(newErrors);
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true)
+        try {
+            const postData = {
+                schoolId: formData?.schoolId,
+                name: formData?.studentName,
+                dob: formData?.dateOfBirth,
+                parent: {
+                    id: 0,
+                    name: formData?.parentName,
+                    occupation: formData?.parentOccupation,
+                    phoneNumber: formData?.parentNumber
+                },
+                address: formData?.address,
+                phoneNumber: formData?.studentNumber,
+                alternativeNumber: formData?.alternateNumber,
+                email: formData?.emailId,
+            }
+            const res = await handleSubmit(postData);
+            if (res?.status) {
+                setShowModal(true);
+                clearError();
+                navigate("/student")
+            } else if (res?.messages) {
+                setError(res?.messages.map((msg) => msg.message));
+            } else {
+                // setError("An unexpected error occurred.");
+            }
+        } catch (error) {
+            setError(error.message || "Error submitting the form.");
+        }
+        finally {
+            setLoading(false); // Re-enable button
+        }
+    }
 
     return (
         <div className="form-container">
