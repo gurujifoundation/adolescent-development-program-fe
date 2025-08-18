@@ -1,20 +1,34 @@
-import React from "react";
-import { FaExclamationTriangle } from "react-icons/fa"; // Warning icon
-import "./ErrorMessage.css"; // Assuming you're adding styles in an external CSS file
+import React, { useEffect, useState } from "react";
+import { FaExclamationTriangle } from "react-icons/fa";
+import "./ErrorMessage.css";
 
 interface ErrorMessageProps {
   errors: string[];
 }
 
 const ErrorMessage: React.FC<ErrorMessageProps> = ({ errors }) => {
+  const [visibleErrors, setVisibleErrors] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (errors.length > 0) {
+      setVisibleErrors(errors); // Override old errors with new ones
+      const timer = setTimeout(() => {
+        setVisibleErrors([]); // Clear after 5 seconds
+      }, 5000);
+      return () => clearTimeout(timer); // Cleanup on update
+    }
+  }, [errors]);
+
+  if (visibleErrors.length === 0) return null;
+
   return (
     <div className="error-message">
       <FaExclamationTriangle className="warning-icon" />
       <div className="error-text">
-        {errors.map((err, index) => (
+        {visibleErrors.map((err, index) => (
           <p key={index} className="error-item">
             {err}
-          </p> // Ensuring each error is in its own block
+          </p>
         ))}
       </div>
     </div>

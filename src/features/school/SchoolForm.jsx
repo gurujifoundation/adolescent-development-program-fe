@@ -45,24 +45,71 @@ const SchoolForm = ({
   //submit button
   const handleSubmitButton = async (e) => {
     e.preventDefault();
-
     if (loading) return;
+
+    const newErrors = [];
+
+    // School name: alphanumeric + spaces
+    if (!/^[A-Za-z0-9\s]+$/.test(schoolData.name || "")) {
+      newErrors.push("School name should be alphanumeric only.");
+    }
+
+    // Address: at least 5 characters
+    if (!schoolData.address || schoolData.address.trim().length < 5) {
+      newErrors.push("Address must be at least 5 characters long.");
+    }
+
+    // Principal Name: alphabets and spaces
+    if (!/^[A-Za-z\s]+$/.test(schoolData.principalName || "")) {
+      newErrors.push("Principal name should only contain letters and spaces.");
+    }
+
+    // Principal Contact: 10 digits
+    if (!/^\d{10}$/.test(schoolData.principalContactNo || "")) {
+      newErrors.push("Principal contact number must be exactly 10 digits.");
+    }
+
+    // Trustee Contact (optional): if present, must be 10 digits
+    if (
+      schoolData.trusteeContactInfo &&
+      !/^\d{10}$/.test(schoolData.trusteeContactInfo)
+    ) {
+      newErrors.push("Trustee contact number must be 10 digits.");
+    }
+
+    // Website (optional): basic URL validation
+    if (
+      schoolData.website &&
+      !/^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/\S*)?$/.test(schoolData.website)
+    ) {
+      newErrors.push("Please enter a valid website URL.");
+    }
+
+    if (newErrors.length > 0) {
+      setError(newErrors); // <-- this replaces old errors
+      return;
+    }
+
+    clearError();
     setLoading(true);
     try {
-      const response = await handleSubmit(schoolData); // Wait for the handleSubmit function
+      const response = await handleSubmit(schoolData);
 
       if (response.data?.status) {
-        setShowModal(true); // Show success modal
-        clearError(); // Clear errors
+        setShowModal(true);
+        clearError();
       } else if (response.data?.messages) {
         setError(response.data.messages.map((msg) => msg.message));
-      } else {
+      } else if(response?.response?.data?.messages) {
+        setError(response?.response?.data?.messages.map((msg) => msg.message));
+      }else{
         setError("An unexpected error occurred.");
       }
     } catch (error) {
-      setError(error.message || "Error submitting the form.");
+      // console.log(error)
+      setError(error?.messages.map((msg) => msg.message) || "Error submitting the form.");
     } finally {
-      setLoading(false); // Re-enable button
+      setLoading(false);
     }
   };
 
